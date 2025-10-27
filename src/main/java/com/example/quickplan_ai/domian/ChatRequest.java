@@ -9,5 +9,7 @@ public class ChatRequest {
     // 会话唯一id
     private String memoryId;
     // 用户唯一id
-    private String UserId;
+    private String userId;
+    // OCR识别的文本(可选)
+    private String ocrText;
 }

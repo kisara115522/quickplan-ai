@@ -49,11 +49,16 @@ public class ConversationController {
 
     /**
      * 获取用户的所有会话列表
+     * GET /api/conversation/list/{userId}
      */
     @GetMapping("/list/{userId}")
     public ResponseEntity<Map<String, Object>> getConversationList(@PathVariable String userId) {
         if (userId == null || userId.isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "用户ID不能为空"));
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "用户ID不能为空");
+            errorResponse.put("data", null);
+            return ResponseEntity.badRequest().body(errorResponse);
         }
 
         List<Conversation> conversations = conversationService.getUserConversations(userId);
@@ -62,6 +67,7 @@ public class ConversationController {
         response.put("success", true);
         response.put("data", conversations);
         response.put("total", conversations.size());
+        response.put("message", null);
         return ResponseEntity.ok(response);
     }
 
@@ -100,6 +106,7 @@ public class ConversationController {
 
     /**
      * 获取会话的历史消息记录
+     * GET /api/conversation/messages/{conversationId}
      */
     @GetMapping("/messages/{conversationId}")
     public ResponseEntity<Map<String, Object>> getConversationMessages(@PathVariable String conversationId) {
@@ -109,6 +116,7 @@ public class ConversationController {
         response.put("success", true);
         response.put("data", messages);
         response.put("total", messages.size());
+        response.put("message", null);
         return ResponseEntity.ok(response);
     }
 
@@ -133,7 +141,8 @@ public class ConversationController {
     }
 
     /**
-     * 删除会话
+     * 删除会话(软删除)
+     * DELETE /api/conversation/delete/{conversationId}
      */
     @DeleteMapping("/delete/{conversationId}")
     public ResponseEntity<Map<String, Object>> deleteConversation(@PathVariable String conversationId) {
@@ -146,6 +155,7 @@ public class ConversationController {
         Map<String, Object> response = new HashMap<>();
         response.put("success", success);
         response.put("message", success ? "删除成功" : "删除失败");
+        response.put("data", null);
         return ResponseEntity.ok(response);
     }
 

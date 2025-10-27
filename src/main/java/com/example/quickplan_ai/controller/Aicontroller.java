@@ -95,27 +95,30 @@ public class Aicontroller {
     }
 
     /**
-     * 创建新会话并开始对话
+     * 创建新会话
+     * POST /api/ai/chat/new
      */
     @PostMapping("/chat/new")
-    public Map<String, Object> startNewConversation(@RequestBody ChatRequest request) {
+    public Map<String, Object> startNewConversation(@RequestBody Map<String, String> request) {
         Map<String, Object> response = new HashMap<>();
 
+        String userId = request.get("userId");
+        String title = request.getOrDefault("title", "新对话");
+
         // 验证用户ID
-        if (request.getUserId() == null || request.getUserId().isBlank()) {
+        if (userId == null || userId.isBlank()) {
             response.put("success", false);
-            response.put("error", "用户ID不能为空");
+            response.put("message", "用户ID不能为空");
+            response.put("data", null);
             return response;
         }
 
         // 创建新会话
-        Conversation conversation = conversationService.createConversation(
-                request.getUserId(),
-                "新对话");
+        Conversation conversation = conversationService.createConversation(userId, title);
 
         response.put("success", true);
         response.put("data", conversation);
-        response.put("message", "新会话创建成功");
+        response.put("message", "创建成功");
         return response;
     }
 }
