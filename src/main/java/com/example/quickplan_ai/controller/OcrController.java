@@ -23,7 +23,6 @@ import java.util.regex.Pattern;
  */
 @RestController
 @RequestMapping("/api/ai/ocr")
-@CrossOrigin(origins = "*")
 public class OcrController {
 
     @Autowired

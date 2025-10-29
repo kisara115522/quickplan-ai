@@ -2,6 +2,8 @@ package com.example.quickplan_ai.controller;
 
 import com.example.quickplan_ai.Service.ScheduleService;
 import com.example.quickplan_ai.entity.Schedule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -18,8 +20,9 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/schedule")
-@CrossOrigin(origins = "*")
 public class ScheduleController {
+
+    private static final Logger logger = LoggerFactory.getLogger(ScheduleController.class);
 
     @Autowired
     private ScheduleService scheduleService;
@@ -30,7 +33,10 @@ public class ScheduleController {
      */
     @GetMapping("/list/{userId}")
     public ResponseEntity<Map<String, Object>> getScheduleList(@PathVariable String userId) {
+        logger.info("接收到获取用户日程列表请求, userId: {}", userId);
+
         List<Schedule> schedules = scheduleService.getUserSchedules(userId);
+        logger.info("查询到 {} 条日程记录", schedules.size());
 
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
@@ -51,7 +57,10 @@ public class ScheduleController {
             @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
             @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate) {
 
+        logger.info("接收到获取日期范围日程请求, userId: {}, startDate: {}, endDate: {}", userId, startDate, endDate);
+
         List<Schedule> schedules = scheduleService.getSchedulesByDateRange(userId, startDate, endDate);
+        logger.info("查询到 {} 条日程记录", schedules.size());
 
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
@@ -88,8 +97,11 @@ public class ScheduleController {
      */
     @PostMapping("/create")
     public ResponseEntity<Map<String, Object>> createSchedule(@RequestBody Schedule schedule) {
+        logger.info("接收到创建日程请求: {}", schedule);
+
         // 参数校验
         if (schedule.getUserId() == null || schedule.getUserId().isBlank()) {
+            logger.warn("创建日程失败: 用户ID为空");
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
             errorResponse.put("message", "用户ID不能为空");

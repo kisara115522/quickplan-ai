@@ -1,5 +1,6 @@
 package com.example.quickplan_ai.config;
 
+import com.example.quickplan_ai.Service.ScheduleTools;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.memory.chat.ChatMemoryProvider;
@@ -16,6 +17,13 @@ public class Aiconfiguration {
 
     @Autowired
     private ChatMemoryStore redisChatMemoryStore;
+
+    /**
+     * 注意: ScheduleTools 需要被 Spring 扫描到
+     * 这样 LangChain4j 才能自动发现 @Tool 方法
+     */
+    @Autowired
+    private ScheduleTools scheduleTools;
 
     @Bean
     public ChatMemory chatMemory() {

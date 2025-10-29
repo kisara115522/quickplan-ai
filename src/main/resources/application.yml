@@ -1,34 +1,41 @@
+server:
+  port: 8080
+  tomcat:
+    connection-timeout: 60000
+    max-connections: 10000
+    threads:
+      max: 200
+      min-spare: 10
+    max-http-form-post-size: 104857600
+
 langchain4j:
   open-ai:
     chat-model:
       base-url: https://api.siliconflow.cn/v1
       api-key: ${SILICON_API_KEY}
-      model-name: Qwen/Qwen3-8B
+      model-name: Qwen/Qwen2.5-7B-Instruct
       log-requests: true
       log-responses: true
-    streaming-chat-model:
-      base-url: https://api.siliconflow.cn/v1
-      api-key: ${SILICON_API_KEY}
-      model-name: Qwen/Qwen3-8B
-      log-requests: true
-      log-responses: true
-      timeout: PT1M
+      timeout: PT2M
     embedding-model:
       base-url: https://api.siliconflow.cn/v1
       api-key: ${SILICON_API_KEY}
-      model-name: BAAI/bge-m3
+      model-name: BAAI/bge-large-zh-v1.5
       log-requests: true
       log-responses: true
 
 logging:
   level:
     dev.langchain4j: debug
+    org.springframework.web: debug
+    com.example.quickplan_ai: debug
 
 spring:
   data:
     redis:
       host: localhost
       port: 6379
+
   # MySQL 数据源配置
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
@@ -48,3 +55,17 @@ mybatis:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   mapper-locations: classpath*:/mapper/**/*.xml
+
+# JWT 配置
+jwt:
+  secret: quickplan-ai-secret-key-2025-please-change-this-in-production-environment
+  access-token-expiration: 7200  # 访问令牌有效期: 2小时(秒)
+  refresh-token-expiration: 2592000  # 刷新令牌有效期: 30天(秒)
+
+# 验证码配置
+verification:
+  code:
+    length: 6  # 验证码长度
+    expiration: 300  # 验证码有效期: 5分钟(秒)
+    daily-limit: 10  # 每天最多发送次数
+    interval: 60  # 发送间隔: 60秒

@@ -12,13 +12,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 会话管理Controller
- * 提供会话列表、历史记录查询等功能
- */
 @RestController
 @RequestMapping("/api/conversation")
-@CrossOrigin(origins = "*")
 public class ConversationController {
 
     @Autowired
@@ -27,9 +22,6 @@ public class ConversationController {
     @Autowired
     private MessageService messageService;
 
-    /**
-     * 创建新会话
-     */
     @PostMapping("/create")
     public ResponseEntity<Map<String, Object>> createConversation(@RequestBody Map<String, String> request) {
         String userId = request.get("userId");
@@ -47,10 +39,6 @@ public class ConversationController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * 获取用户的所有会话列表
-     * GET /api/conversation/list/{userId}
-     */
     @GetMapping("/list/{userId}")
     public ResponseEntity<Map<String, Object>> getConversationList(@PathVariable String userId) {
         if (userId == null || userId.isBlank()) {
@@ -71,9 +59,6 @@ public class ConversationController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * 获取最近的N个会话
-     */
     @GetMapping("/recent/{userId}")
     public ResponseEntity<Map<String, Object>> getRecentConversations(
             @PathVariable String userId,
@@ -87,15 +72,35 @@ public class ConversationController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * 获取会话详情(包括会话信息)
-     */
     @GetMapping("/detail/{conversationId}")
-    public ResponseEntity<Map<String, Object>> getConversationDetail(@PathVariable String conversationId) {
+    public ResponseEntity<Map<String, Object>> getConversationDetail(
+            @PathVariable String conversationId,
+            @RequestParam String userId) {
+
+        if (userId == null || userId.isBlank()) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "用户ID不能为空");
+            errorResponse.put("data", null);
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+
         Conversation conversation = conversationService.getConversationById(conversationId);
 
         if (conversation == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "会话不存在"));
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "会话不存在");
+            errorResponse.put("data", null);
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+
+        if (!conversation.getUserId().equals(userId)) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "无权访问该会话");
+            errorResponse.put("data", null);
+            return ResponseEntity.status(403).body(errorResponse);
         }
 
         Map<String, Object> response = new HashMap<>();
@@ -104,12 +109,36 @@ public class ConversationController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * 获取会话的历史消息记录
-     * GET /api/conversation/messages/{conversationId}
-     */
     @GetMapping("/messages/{conversationId}")
-    public ResponseEntity<Map<String, Object>> getConversationMessages(@PathVariable String conversationId) {
+    public ResponseEntity<Map<String, Object>> getConversationMessages(
+            @PathVariable String conversationId,
+            @RequestParam String userId) {
+
+        if (userId == null || userId.isBlank()) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "用户ID不能为空");
+            errorResponse.put("data", null);
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+
+        Conversation conversation = conversationService.getConversationById(conversationId);
+        if (conversation == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "会话不存在");
+            errorResponse.put("data", null);
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+
+        if (!conversation.getUserId().equals(userId)) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "无权访问该会话");
+            errorResponse.put("data", null);
+            return ResponseEntity.status(403).body(errorResponse);
+        }
+
         List<Message> messages = messageService.getConversationMessages(conversationId);
 
         Map<String, Object> response = new HashMap<>();
@@ -120,16 +149,35 @@ public class ConversationController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * 更新会话标题
-     */
     @PutMapping("/update-title")
     public ResponseEntity<Map<String, Object>> updateConversationTitle(@RequestBody Map<String, String> request) {
         String conversationId = request.get("conversationId");
+        String userId = request.get("userId");
         String title = request.get("title");
 
-        if (conversationId == null || title == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "参数不完整"));
+        if (conversationId == null || title == null || userId == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "参数不完整");
+            errorResponse.put("data", null);
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+
+        Conversation conversation = conversationService.getConversationById(conversationId);
+        if (conversation == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "会话不存在");
+            errorResponse.put("data", null);
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+
+        if (!conversation.getUserId().equals(userId)) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "无权修改该会话");
+            errorResponse.put("data", null);
+            return ResponseEntity.status(403).body(errorResponse);
         }
 
         boolean success = conversationService.updateTitle(conversationId, title);
@@ -140,16 +188,37 @@ public class ConversationController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * 删除会话(软删除)
-     * DELETE /api/conversation/delete/{conversationId}
-     */
     @DeleteMapping("/delete/{conversationId}")
-    public ResponseEntity<Map<String, Object>> deleteConversation(@PathVariable String conversationId) {
-        // 先删除会话的所有消息
-        messageService.deleteConversationMessages(conversationId);
+    public ResponseEntity<Map<String, Object>> deleteConversation(
+            @PathVariable String conversationId,
+            @RequestParam String userId) {
 
-        // 再删除会话
+        if (userId == null || userId.isBlank()) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "用户ID不能为空");
+            errorResponse.put("data", null);
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+
+        Conversation conversation = conversationService.getConversationById(conversationId);
+        if (conversation == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "会话不存在");
+            errorResponse.put("data", null);
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+
+        if (!conversation.getUserId().equals(userId)) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "无权删除该会话");
+            errorResponse.put("data", null);
+            return ResponseEntity.status(403).body(errorResponse);
+        }
+
+        messageService.deleteConversationMessages(conversationId);
         boolean success = conversationService.deleteConversation(conversationId);
 
         Map<String, Object> response = new HashMap<>();
@@ -159,12 +228,37 @@ public class ConversationController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * 获取会话统计信息
-     */
     @GetMapping("/stats/{conversationId}")
-    public ResponseEntity<Map<String, Object>> getConversationStats(@PathVariable String conversationId) {
+    public ResponseEntity<Map<String, Object>> getConversationStats(
+            @PathVariable String conversationId,
+            @RequestParam String userId) {
+
+        if (userId == null || userId.isBlank()) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "用户ID不能为空");
+            errorResponse.put("data", null);
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+
         Conversation conversation = conversationService.getConversationById(conversationId);
+
+        if (conversation == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "会话不存在");
+            errorResponse.put("data", null);
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+
+        if (!conversation.getUserId().equals(userId)) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "无权访问该会话");
+            errorResponse.put("data", null);
+            return ResponseEntity.status(403).body(errorResponse);
+        }
+
         Integer messageCount = messageService.countMessages(conversationId);
 
         Map<String, Object> stats = new HashMap<>();
